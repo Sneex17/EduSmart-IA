@@ -1,6 +1,6 @@
 
 import "./App.css";
-import Login from "./pages/Login";
+import "antd/dist/antd.css"
 import MyRouter from "./routers/router";
 
 function App() {
