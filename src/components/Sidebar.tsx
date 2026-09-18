@@ -1,5 +1,5 @@
 import { ChevronFirst } from "lucide-react";
-import Logo from "../assets/vite.svg";
+import Logo from "../assets/Logo-EduSmart.svg";
 
 function Sidebar() {
   return (

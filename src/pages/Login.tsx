@@ -1,5 +1,6 @@
 import { useForm } from "react-hook-form";
 import { useNavigate } from "react-router-dom";
+import LogoText from "../assets/EduSmartIA.svg"
 
 function Login() {
 
@@ -13,7 +14,9 @@ function Login() {
     <>
       <div className="flex w-full h-screen justify-center items-center">
         <div className="flex flex-col items-center bg-blue-100 w-100 h-100 rounded-xl border-2 p-5 ">
-          <h1 className=" font-semibold mb-17">Welcome back</h1>
+          
+          <h1 className=" font-semibold mb-1">Welcome back</h1>
+          <img src={LogoText} className="w-60 mb-5"/>
           <div className="flex flex-col ">
             <form className="flex flex-col">
               <label htmlFor="correo" className="text-gray-800">
