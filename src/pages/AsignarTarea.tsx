@@ -1,6 +1,14 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import SelectField from "../components/SelectField";
 import DateField from "../components/DateField";
+import {
+  type cursos,
+  ListaCursos,
+  ListaMateriasPorCurso,
+  type materias,
+  ListaEstudiantesPorCurso,
+  type estudiantes,
+} from "../Controllers/CursoController";
 
 // ---------- Tipos ----------
 type Curso = { id: number; nombre: string };
@@ -13,6 +21,10 @@ type Estudiante = {
 };
 
 // ---------- Datos de prueba (reemplazar por tus datos reales) ----------
+
+const ID_DOCENTE = 1;
+const ID_PERIODO = "26-27";
+
 const cursosMock: Curso[] = [
   { id: 1, nombre: "1ro A" },
   { id: 2, nombre: "2do B" },
@@ -44,31 +56,59 @@ const obtenerHoy = () => {
 };
 
 function AsignarTarea() {
+  const [listaCursos, setListaCursos] = useState<cursos[]>([]);
+
+  useEffect(() => {
+    ListaCursos(ID_DOCENTE, ID_PERIODO).then((data) =>
+      setListaCursos(data ?? []),
+    );
+  }, []);
+
+  const opcionesCursos = listaCursos.map((c) => ({
+    id: c.id_curso,
+    nombre: c.curso,
+  }));
+
+  const [listaMaterias, setListaMaterias] = useState<materias[]>([]);
+  const [materiaId, setMateriaId] = useState("");
+  const [listaEstudiantes, setListaEstudiantes] = useState<estudiantes[]>([]);
+
+  const handleCursoChange = async (value: string) => {
+    setCursoId(value);
+    setMateriaId("");
+    setListaMaterias([]);
+    setListaEstudiantes([]);
+
+    if (!value) return;
+
+    const [materiasData, estudiantesData] = await Promise.all([
+      ListaMateriasPorCurso(ID_DOCENTE, Number(value), ID_PERIODO),
+      ListaEstudiantesPorCurso(Number(value), ID_PERIODO),
+    ]);
+
+    setListaMaterias(materiasData ?? []);
+    setListaEstudiantes(estudiantesData ?? []);
+  };
+
+  const opcionesMaterias = listaMaterias.map((m) => ({
+    id: m.id_docente_curso_detalle,
+    nombre: m.materia,
+  }));
+
   // Cuando tengas la API, cambia estos por useState + useEffect
-  const cursos = cursosMock;
-  const materias = materiasMock;
+
   const estudiantes = estudiantesMock;
 
   const [descripcion, setDescripcion] = useState("");
   const [cursoId, setCursoId] = useState("");
-  const [materiaId, setMateriaId] = useState("");
   const [fechaEntrega, setFechaEntrega] = useState("");
 
   // Materias y estudiantes dependen del curso seleccionado
-  const materiasDelCurso = useMemo(
-    () => materias.filter((m) => m.cursoId === Number(cursoId)),
-    [materias, cursoId]
-  );
 
   const estudiantesDelCurso = useMemo(
     () => estudiantes.filter((e) => e.cursoId === Number(cursoId)),
-    [estudiantes, cursoId]
+    [estudiantes, cursoId],
   );
-
-  const handleCursoChange = (value: string) => {
-    setCursoId(value);
-    setMateriaId(""); // al cambiar de curso se reinicia la materia
-  };
 
   const puedeAsignar =
     descripcion.trim() !== "" &&
@@ -114,7 +154,7 @@ function AsignarTarea() {
         <SelectField
           id="curso"
           label="Curso"
-          opciones={cursos}
+          opciones={opcionesCursos}
           value={cursoId}
           onChange={handleCursoChange}
           placeholder="Selecciona un curso"
@@ -123,7 +163,7 @@ function AsignarTarea() {
         <SelectField
           id="materia"
           label="Materia"
-          opciones={materiasDelCurso}
+          opciones={opcionesMaterias}
           value={materiaId}
           onChange={setMateriaId}
           placeholder="Selecciona una materia"
@@ -153,8 +193,9 @@ function AsignarTarea() {
           <thead className="bg-slate-100 text-slate-600">
             <tr>
               <th className="px-4 py-3 font-medium">#</th>
+              <th className="px-4 py-3 font-medium">Matricúla</th>
               <th className="px-4 py-3 font-medium">Estudiante</th>
-              <th className="px-4 py-3 font-medium">Correo</th>
+              
             </tr>
           </thead>
           <tbody>
@@ -167,7 +208,7 @@ function AsignarTarea() {
                   Selecciona un curso para ver los estudiantes
                 </td>
               </tr>
-            ) : estudiantesDelCurso.length === 0 ? (
+            ) : listaEstudiantes.length === 0 ? (
               <tr>
                 <td
                   colSpan={3}
@@ -177,14 +218,14 @@ function AsignarTarea() {
                 </td>
               </tr>
             ) : (
-              estudiantesDelCurso.map((est, i) => (
+              listaEstudiantes.map((est, i) => (
                 <tr
-                  key={est.id}
+                  key={est.matricula}
                   className="border-t border-slate-100 hover:bg-slate-50"
                 >
                   <td className="px-4 py-3 text-slate-500">{i + 1}</td>
-                  <td className="px-4 py-3 text-slate-800">{est.nombre}</td>
-                  <td className="px-4 py-3 text-slate-600">{est.correo}</td>
+                  <td className="px-4 py-3 text-slate-800">{est.matricula}</td>
+                  <td className="px-4 py-3 text-slate-800">{est.nombres} {est.apellidos}</td>
                 </tr>
               ))
             )}
