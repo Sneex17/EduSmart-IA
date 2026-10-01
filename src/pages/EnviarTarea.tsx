@@ -1,7 +1,18 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import SelectField from "../components/SelectField";
 import DateField from "../components/DateField";
 
+import {
+  type cursos,
+  ListaCursos,
+  ListaMateriasPorCurso,
+  type materias,
+  ListaEstudiantesPorCurso,
+  type estudiantes,
+} from "../Controllers/CursoController";
+
+const ID_DOCENTE = 1;
+const ID_PERIODO = "26-27";
 // ---------- Estados ----------
 const ESTADO = { GENERADA: 1, ENVIADA: 2 } as const;
 const estadoLabel: Record<number, string> = {
@@ -75,12 +86,54 @@ const tareasMock: Tarea[] = [
 ];
 
 const detallesMock: DetalleTarea[] = [
-  { idTarea: 1, idEstudiante: 1, nombreEstudiante: "Ana Pérez", tarea: "Ana: resolver los ejercicios 1 al 10 de fracciones", nota: null, estado: ESTADO.GENERADA },
-  { idTarea: 1, idEstudiante: 2, nombreEstudiante: "Luis Gómez", tarea: "Luis: resolver los ejercicios 5 al 15 de fracciones", nota: null, estado: ESTADO.GENERADA },
-  { idTarea: 2, idEstudiante: 1, nombreEstudiante: "Ana Pérez", tarea: "Ana: investigar usos de los decimales en el comercio", nota: 90, estado: ESTADO.ENVIADA },
-  { idTarea: 2, idEstudiante: 2, nombreEstudiante: "Luis Gómez", tarea: "Luis: investigar usos de los decimales en la cocina", nota: null, estado: ESTADO.ENVIADA },
-  { idTarea: 3, idEstudiante: 1, nombreEstudiante: "Ana Pérez", tarea: "Ana: texto narrativo sobre un viaje", nota: null, estado: ESTADO.GENERADA },
-  { idTarea: 3, idEstudiante: 2, nombreEstudiante: "Luis Gómez", tarea: "Luis: texto narrativo sobre un sueño", nota: null, estado: ESTADO.GENERADA },
+  {
+    idTarea: 1,
+    idEstudiante: 1,
+    nombreEstudiante: "Ana Pérez",
+    tarea: "Ana: resolver los ejercicios 1 al 10 de fracciones",
+    nota: null,
+    estado: ESTADO.GENERADA,
+  },
+  {
+    idTarea: 1,
+    idEstudiante: 2,
+    nombreEstudiante: "Luis Gómez",
+    tarea: "Luis: resolver los ejercicios 5 al 15 de fracciones",
+    nota: null,
+    estado: ESTADO.GENERADA,
+  },
+  {
+    idTarea: 2,
+    idEstudiante: 1,
+    nombreEstudiante: "Ana Pérez",
+    tarea: "Ana: investigar usos de los decimales en el comercio",
+    nota: 90,
+    estado: ESTADO.ENVIADA,
+  },
+  {
+    idTarea: 2,
+    idEstudiante: 2,
+    nombreEstudiante: "Luis Gómez",
+    tarea: "Luis: investigar usos de los decimales en la cocina",
+    nota: null,
+    estado: ESTADO.ENVIADA,
+  },
+  {
+    idTarea: 3,
+    idEstudiante: 1,
+    nombreEstudiante: "Ana Pérez",
+    tarea: "Ana: texto narrativo sobre un viaje",
+    nota: null,
+    estado: ESTADO.GENERADA,
+  },
+  {
+    idTarea: 3,
+    idEstudiante: 2,
+    nombreEstudiante: "Luis Gómez",
+    tarea: "Luis: texto narrativo sobre un sueño",
+    nota: null,
+    estado: ESTADO.GENERADA,
+  },
 ];
 
 // =====================================================================
@@ -91,7 +144,7 @@ const esperar = (ms: number) => new Promise((r) => setTimeout(r, ms));
 // REEMPLAZAR: llamada a n8n. Debe devolver el arreglo JSON de DetalleTarea.
 const regenerarDetalles = async (
   tarea: Tarea,
-  actuales: DetalleTarea[]
+  actuales: DetalleTarea[],
 ): Promise<DetalleTarea[]> => {
   await esperar(1500);
   return actuales.map((d) => ({
@@ -108,7 +161,7 @@ const actualizarTarea = async (_tarea: Tarea): Promise<void> => {
 // REEMPLAZAR: guarda en la base de datos los detalles que devolvió n8n.
 const guardarDetalles = async (
   _idTarea: number,
-  _detalles: DetalleTarea[]
+  _detalles: DetalleTarea[],
 ): Promise<void> => {
   await esperar(300);
 };
@@ -141,14 +194,33 @@ const btnPrimario = `${btnBase} bg-blue-600 text-white hover:bg-blue-700`;
 const btnPeligro = `${btnBase} border border-red-300 text-red-600 hover:bg-red-50`;
 
 function EnviarTarea() {
+  const [listaCursos, setListaCursos] = useState<cursos[]>([]);
+
+  useEffect(() => {
+    ListaCursos(ID_DOCENTE, ID_PERIODO).then((data) =>
+      setListaCursos(data ?? []),
+    );
+  }, []);
+
+  const [listaMaterias, setListaMaterias] = useState<materias[]>([]);
+  const [materiaId, setMateriaId] = useState("");
   // Cuando tengas la API, cambia estos por useState + useEffect
-  const cursos = cursosMock;
-  const materias = materiasMock;
+  const opcionesCursos = listaCursos.map((c) => ({
+    id: c.id_curso,
+    nombre: c.curso,
+  }));
+
+  const opcionesMaterias = listaMaterias.map((m) => ({
+    id: m.id_docente_curso_detalle,
+    nombre: m.materia,
+  }));
+
+
   const [tareas, setTareas] = useState<Tarea[]>(tareasMock);
   const [detalles, setDetalles] = useState<DetalleTarea[]>(detallesMock);
 
   const [cursoId, setCursoId] = useState("");
-  const [materiaId, setMateriaId] = useState("");
+
   const [tareaDetalleId, setTareaDetalleId] = useState<number | null>(null);
 
   // Edición de la tarea general (modal)
@@ -159,13 +231,11 @@ function EnviarTarea() {
   const [errorEdicion, setErrorEdicion] = useState("");
 
   // Edición del texto de un estudiante (en la fila)
-  const [editandoEstudianteId, setEditandoEstudianteId] = useState<number | null>(null);
+  const [editandoEstudianteId, setEditandoEstudianteId] = useState<
+    number | null
+  >(null);
   const [draftDetalle, setDraftDetalle] = useState("");
 
-  const materiasDelCurso = useMemo(
-    () => materias.filter((m) => m.cursoId === Number(cursoId)),
-    [materias, cursoId]
-  );
 
   const tareasFiltradas = useMemo(
     () =>
@@ -174,16 +244,16 @@ function EnviarTarea() {
         : tareas.filter(
             (t) =>
               t.idCurso === Number(cursoId) &&
-              t.idMateria === Number(materiaId)
+              t.idMateria === Number(materiaId),
           ),
-    [tareas, cursoId, materiaId]
+    [tareas, cursoId, materiaId],
   );
 
   const tareaSeleccionada =
     tareas.find((t) => t.idTarea === tareaDetalleId) ?? null;
 
   const detallesSeleccionados = detalles.filter(
-    (d) => d.idTarea === tareaDetalleId
+    (d) => d.idTarea === tareaDetalleId,
   );
 
   const detalleEditable = tareaSeleccionada?.estado === ESTADO.GENERADA;
@@ -192,6 +262,7 @@ function EnviarTarea() {
   const handleCursoChange = (value: string) => {
     setCursoId(value);
     setMateriaId("");
+    setListaMaterias([]);
     setTareaDetalleId(null);
     setEditandoEstudianteId(null);
   };
@@ -221,13 +292,13 @@ function EnviarTarea() {
     // TODO: llamada a la API / n8n para enviar
     setTareas((prev) =>
       prev.map((x) =>
-        x.idTarea === t.idTarea ? { ...x, estado: ESTADO.ENVIADA } : x
-      )
+        x.idTarea === t.idTarea ? { ...x, estado: ESTADO.ENVIADA } : x,
+      ),
     );
     setDetalles((prev) =>
       prev.map((d) =>
-        d.idTarea === t.idTarea ? { ...d, estado: ESTADO.ENVIADA } : d
-      )
+        d.idTarea === t.idTarea ? { ...d, estado: ESTADO.ENVIADA } : d,
+      ),
     );
     if (tareaDetalleId === t.idTarea) setEditandoEstudianteId(null);
   };
@@ -245,8 +316,7 @@ function EnviarTarea() {
     setTareaEditando(null);
   };
 
-  const puedeGuardarEdicion =
-    editDescripcion.trim() !== "" && editFecha !== "";
+  const puedeGuardarEdicion = editDescripcion.trim() !== "" && editFecha !== "";
 
   const guardarEdicion = async () => {
     if (!tareaEditando || !puedeGuardarEdicion || guardando) return;
@@ -268,7 +338,7 @@ function EnviarTarea() {
       // 1. Solo si cambió la descripción, n8n genera los nuevos detalles
       if (cambioDescripcion) {
         const actuales = detalles.filter(
-          (d) => d.idTarea === tareaActualizada.idTarea
+          (d) => d.idTarea === tareaActualizada.idTarea,
         );
         nuevosDetalles = await regenerarDetalles(tareaActualizada, actuales);
       }
@@ -282,8 +352,8 @@ function EnviarTarea() {
       // 3. Recién ahora se actualiza la pantalla
       setTareas((prev) =>
         prev.map((t) =>
-          t.idTarea === tareaActualizada.idTarea ? tareaActualizada : t
-        )
+          t.idTarea === tareaActualizada.idTarea ? tareaActualizada : t,
+        ),
       );
       if (nuevosDetalles) {
         const detallesNuevos = nuevosDetalles;
@@ -318,8 +388,8 @@ function EnviarTarea() {
       prev.map((d) =>
         d.idTarea === tareaDetalleId && d.idEstudiante === editandoEstudianteId
           ? { ...d, tarea: draftDetalle.trim() }
-          : d
-      )
+          : d,
+      ),
     );
     setEditandoEstudianteId(null);
   };
@@ -333,7 +403,7 @@ function EnviarTarea() {
         <SelectField
           id="curso"
           label="Curso"
-          opciones={cursos}
+          opciones={opcionesCursos}
           value={cursoId}
           onChange={handleCursoChange}
           placeholder="Selecciona un curso"
@@ -341,9 +411,9 @@ function EnviarTarea() {
         <SelectField
           id="materia"
           label="Materia"
-          opciones={materiasDelCurso}
+          opciones={opcionesMaterias}
           value={materiaId}
-          onChange={handleMateriaChange}
+          onChange={setMateriaId}
           placeholder="Selecciona una materia"
           disabled={cursoId === ""}
         />
@@ -363,13 +433,19 @@ function EnviarTarea() {
           <tbody>
             {materiaId === "" ? (
               <tr>
-                <td colSpan={4} className="px-4 py-10 text-center text-slate-400">
+                <td
+                  colSpan={4}
+                  className="px-4 py-10 text-center text-slate-400"
+                >
                   Selecciona un curso y una materia para ver las tareas
                 </td>
               </tr>
             ) : tareasFiltradas.length === 0 ? (
               <tr>
-                <td colSpan={4} className="px-4 py-10 text-center text-slate-400">
+                <td
+                  colSpan={4}
+                  className="px-4 py-10 text-center text-slate-400"
+                >
                   Esta materia no tiene tareas
                 </td>
               </tr>
@@ -380,24 +456,37 @@ function EnviarTarea() {
                   <tr
                     key={t.idTarea}
                     className={`border-t border-slate-100 ${
-                      t.idTarea === tareaDetalleId ? "bg-blue-50" : "hover:bg-slate-50"
+                      t.idTarea === tareaDetalleId
+                        ? "bg-blue-50"
+                        : "hover:bg-slate-50"
                     }`}
                   >
-                    <td className="px-4 py-3 text-slate-800">{t.descripcion}</td>
-                    <td className="whitespace-nowrap px-4 py-3 text-slate-600">{t.fecha}</td>
+                    <td className="px-4 py-3 text-slate-800">
+                      {t.descripcion}
+                    </td>
+                    <td className="whitespace-nowrap px-4 py-3 text-slate-600">
+                      {t.fecha}
+                    </td>
                     <td className="px-4 py-3">
                       <EstadoBadge estado={t.estado} />
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex flex-wrap gap-2">
-                        <button className={btnNeutro} onClick={() => verDetalle(t)}>
+                        <button
+                          className={btnNeutro}
+                          onClick={() => verDetalle(t)}
+                        >
                           Ver detalle
                         </button>
                         <button
                           className={btnNeutro}
                           onClick={() => abrirEditar(t)}
                           disabled={bloqueada}
-                          title={bloqueada ? "Una tarea enviada no se puede editar" : undefined}
+                          title={
+                            bloqueada
+                              ? "Una tarea enviada no se puede editar"
+                              : undefined
+                          }
                         >
                           Editar
                         </button>
@@ -405,7 +494,9 @@ function EnviarTarea() {
                           className={btnPrimario}
                           onClick={() => enviarTarea(t)}
                           disabled={bloqueada}
-                          title={bloqueada ? "Esta tarea ya fue enviada" : undefined}
+                          title={
+                            bloqueada ? "Esta tarea ya fue enviada" : undefined
+                          }
                         >
                           Enviar
                         </button>
@@ -413,7 +504,11 @@ function EnviarTarea() {
                           className={btnPeligro}
                           onClick={() => eliminarTarea(t)}
                           disabled={bloqueada}
-                          title={bloqueada ? "Una tarea enviada no se puede eliminar" : undefined}
+                          title={
+                            bloqueada
+                              ? "Una tarea enviada no se puede eliminar"
+                              : undefined
+                          }
                         >
                           Eliminar
                         </button>
@@ -434,7 +529,10 @@ function EnviarTarea() {
             <h2 className="text-lg font-semibold text-slate-800">
               Detalle por estudiante
             </h2>
-            <button className={btnNeutro} onClick={() => setTareaDetalleId(null)}>
+            <button
+              className={btnNeutro}
+              onClick={() => setTareaDetalleId(null)}
+            >
               Cerrar detalle
             </button>
           </div>
@@ -453,7 +551,10 @@ function EnviarTarea() {
               <tbody>
                 {detallesSeleccionados.length === 0 ? (
                   <tr>
-                    <td colSpan={5} className="px-4 py-10 text-center text-slate-400">
+                    <td
+                      colSpan={5}
+                      className="px-4 py-10 text-center text-slate-400"
+                    >
                       Esta tarea no tiene detalle
                     </td>
                   </tr>
@@ -461,7 +562,10 @@ function EnviarTarea() {
                   detallesSeleccionados.map((d) => {
                     const enEdicion = editandoEstudianteId === d.idEstudiante;
                     return (
-                      <tr key={d.idEstudiante} className="border-t border-slate-100">
+                      <tr
+                        key={d.idEstudiante}
+                        className="border-t border-slate-100"
+                      >
                         <td className="whitespace-nowrap px-4 py-3 text-slate-800">
                           {d.nombreEstudiante}
                         </td>
@@ -477,7 +581,9 @@ function EnviarTarea() {
                             d.tarea
                           )}
                         </td>
-                        <td className="px-4 py-3 text-slate-600">{d.nota ?? "—"}</td>
+                        <td className="px-4 py-3 text-slate-600">
+                          {d.nota ?? "—"}
+                        </td>
                         <td className="px-4 py-3">
                           <EstadoBadge estado={d.estado} />
                         </td>
@@ -503,7 +609,11 @@ function EnviarTarea() {
                               className={btnNeutro}
                               onClick={() => empezarEditarDetalle(d)}
                               disabled={!detalleEditable}
-                              title={!detalleEditable ? "Una tarea enviada no se puede editar" : undefined}
+                              title={
+                                !detalleEditable
+                                  ? "Una tarea enviada no se puede editar"
+                                  : undefined
+                              }
                             >
                               Editar
                             </button>
@@ -523,7 +633,9 @@ function EnviarTarea() {
       {tareaEditando && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
           <div className="flex w-full max-w-lg flex-col gap-4 rounded-2xl bg-white p-6 shadow-lg">
-            <h2 className="text-lg font-semibold text-slate-800">Editar tarea</h2>
+            <h2 className="text-lg font-semibold text-slate-800">
+              Editar tarea
+            </h2>
 
             <div className="flex flex-col gap-1.5">
               <label

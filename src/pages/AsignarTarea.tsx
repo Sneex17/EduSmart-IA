@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import SelectField from "../components/SelectField";
 import DateField from "../components/DateField";
 import {
@@ -10,41 +10,10 @@ import {
   type estudiantes,
 } from "../Controllers/CursoController";
 
-// ---------- Tipos ----------
-type Curso = { id: number; nombre: string };
-type Materia = { id: number; nombre: string; cursoId: number };
-type Estudiante = {
-  id: number;
-  nombre: string;
-  correo: string;
-  cursoId: number;
-};
-
 // ---------- Datos de prueba (reemplazar por tus datos reales) ----------
 
 const ID_DOCENTE = 1;
 const ID_PERIODO = "26-27";
-
-const cursosMock: Curso[] = [
-  { id: 1, nombre: "1ro A" },
-  { id: 2, nombre: "2do B" },
-  { id: 3, nombre: "3ro C" },
-];
-
-const materiasMock: Materia[] = [
-  { id: 1, nombre: "Matemáticas", cursoId: 1 },
-  { id: 2, nombre: "Lengua Española", cursoId: 1 },
-  { id: 3, nombre: "Ciencias Naturales", cursoId: 2 },
-  { id: 4, nombre: "Historia", cursoId: 2 },
-  { id: 5, nombre: "Inglés", cursoId: 3 },
-];
-
-const estudiantesMock: Estudiante[] = [
-  { id: 1, nombre: "Ana Pérez", correo: "ana@correo.com", cursoId: 1 },
-  { id: 2, nombre: "Luis Gómez", correo: "luis@correo.com", cursoId: 1 },
-  { id: 3, nombre: "María Rosario", correo: "maria@correo.com", cursoId: 2 },
-  { id: 4, nombre: "Carlos Díaz", correo: "carlos@correo.com", cursoId: 3 },
-];
 
 // Fecha de hoy en formato YYYY-MM-DD usando la hora local
 // (toISOString usa UTC y en la noche podría devolver el día siguiente)
@@ -97,7 +66,7 @@ function AsignarTarea() {
 
   // Cuando tengas la API, cambia estos por useState + useEffect
 
-  const estudiantes = estudiantesMock;
+
 
   const [descripcion, setDescripcion] = useState("");
   const [cursoId, setCursoId] = useState("");
@@ -105,10 +74,7 @@ function AsignarTarea() {
 
   // Materias y estudiantes dependen del curso seleccionado
 
-  const estudiantesDelCurso = useMemo(
-    () => estudiantes.filter((e) => e.cursoId === Number(cursoId)),
-    [estudiantes, cursoId],
-  );
+
 
   const puedeAsignar =
     descripcion.trim() !== "" &&
@@ -123,7 +89,7 @@ function AsignarTarea() {
       cursoId: Number(cursoId),
       materiaId: Number(materiaId),
       fechaEntrega,
-      estudiantes: estudiantesDelCurso,
+
     });
   };
 
@@ -195,6 +161,8 @@ function AsignarTarea() {
               <th className="px-4 py-3 font-medium">#</th>
               <th className="px-4 py-3 font-medium">Matricúla</th>
               <th className="px-4 py-3 font-medium">Estudiante</th>
+              <th className="px-4 py-3 font-medium">Correo</th>
+              <th className="px-4 py-3 font-medium">Pasatiempo</th>
               
             </tr>
           </thead>
@@ -226,6 +194,8 @@ function AsignarTarea() {
                   <td className="px-4 py-3 text-slate-500">{i + 1}</td>
                   <td className="px-4 py-3 text-slate-800">{est.matricula}</td>
                   <td className="px-4 py-3 text-slate-800">{est.nombres} {est.apellidos}</td>
+                  <td className="px-4 py-3 text-slate-800">{est.nombres}.{est.apellidos}@edusmart.edu.do</td>
+                  <td className="px-4 py-3 text-slate-800">leer, dormir y jugar</td>
                 </tr>
               ))
             )}
