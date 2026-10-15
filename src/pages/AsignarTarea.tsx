@@ -2,13 +2,14 @@ import { useEffect, useState } from "react";
 import SelectField from "../components/SelectField";
 import DateField from "../components/DateField";
 import {
-  type cursos,
   ListaCursos,
   ListaMateriasPorCurso,
   type materias,
   ListaEstudiantesPorCurso,
-  type estudiantes,
 } from "../Controllers/CursoController";
+import { GenerarTarea } from "../Controllers/GenerarTareaController"; // ajusta la ruta según dónde guardaste el servicio
+import type estudiantes from "../interfaces/estudiantes";
+import type curso from "../interfaces/curso";
 
 // ---------- Datos de prueba (reemplazar por tus datos reales) ----------
 
@@ -24,24 +25,46 @@ const obtenerHoy = () => {
   return `${d.getFullYear()}-${mes}-${dia}`;
 };
 
-function AsignarTarea() {
-  const [listaCursos, setListaCursos] = useState<cursos[]>([]);
+const quitarAcentos = (texto: string) =>
+  texto.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
 
+// Correo provisional: nombres.apellidos@edusmart.edu.do (sin tildes ni espacios)
+const armarCorreo = (e: { nombres: string; apellidos: string }) =>
+  `${quitarAcentos(e.nombres)}.${quitarAcentos(e.apellidos)}`
+    .toLowerCase()
+    .replace(/\s+/g, "") + "@edusmart.edu.do";
+
+function AsignarTarea() {
+  // ---------- Estados ----------
+  const [listaCursos, setListaCursos] = useState<curso[]>([]);
+  const [listaMaterias, setListaMaterias] = useState<materias[]>([]);
+  const [listaEstudiantes, setListaEstudiantes] = useState<estudiantes[]>([]);
+
+  const [descripcion, setDescripcion] = useState("");
+  const [cursoId, setCursoId] = useState("");
+  const [materiaId, setMateriaId] = useState("");
+  const [fechaEntrega, setFechaEntrega] = useState("");
+  const [cargando, setCargando] = useState(false);
+
+  // ---------- Carga inicial de cursos ----------
   useEffect(() => {
     ListaCursos(ID_DOCENTE, ID_PERIODO).then((data) =>
       setListaCursos(data ?? []),
     );
   }, []);
 
+  // ---------- Opciones de los selects ----------
   const opcionesCursos = listaCursos.map((c) => ({
     id: c.id_curso,
     nombre: c.curso,
   }));
 
-  const [listaMaterias, setListaMaterias] = useState<materias[]>([]);
-  const [materiaId, setMateriaId] = useState("");
-  const [listaEstudiantes, setListaEstudiantes] = useState<estudiantes[]>([]);
+  const opcionesMaterias = listaMaterias.map((m) => ({
+    id: m.id_docente_curso_detalle,
+    nombre: m.materia,
+  }));
 
+  // ---------- Handlers ----------
   const handleCursoChange = async (value: string) => {
     setCursoId(value);
     setMateriaId("");
@@ -56,25 +79,14 @@ function AsignarTarea() {
     ]);
 
     setListaMaterias(materiasData ?? []);
-    setListaEstudiantes(estudiantesData ?? []);
+    setListaEstudiantes(
+      (estudiantesData ?? []).map((e) => ({
+        ...e,
+        correo: armarCorreo(e),
+        perfil: "leer, dormir y jugar", // reemplazar por el dato real cuando exista
+      })),
+    );
   };
-
-  const opcionesMaterias = listaMaterias.map((m) => ({
-    id: m.id_docente_curso_detalle,
-    nombre: m.materia,
-  }));
-
-  // Cuando tengas la API, cambia estos por useState + useEffect
-
-
-
-  const [descripcion, setDescripcion] = useState("");
-  const [cursoId, setCursoId] = useState("");
-  const [fechaEntrega, setFechaEntrega] = useState("");
-
-  // Materias y estudiantes dependen del curso seleccionado
-
-
 
   const puedeAsignar =
     descripcion.trim() !== "" &&
@@ -82,15 +94,34 @@ function AsignarTarea() {
     materiaId !== "" &&
     fechaEntrega !== "";
 
-  const handleAsignar = () => {
-    // TODO: aquí va la llamada al webhook de n8n
-    console.log({
-      descripcion,
-      cursoId: Number(cursoId),
-      materiaId: Number(materiaId),
-      fechaEntrega,
+  const handleAsignar = async () => {
+    const nombreCurso =
+      listaCursos.find((c) => String(c.id_curso) === cursoId)?.curso ?? "";
+    const nombreMateria =
+      listaMaterias.find(
+        (m) => String(m.id_docente_curso_detalle) === materiaId,
+      )?.materia ?? "";
 
-    });
+    try {
+      setCargando(true);
+
+      const resultado = await GenerarTarea(
+        {
+          Tarea: descripcion,
+          Curso: nombreCurso,
+          Materia: nombreMateria,
+          Fecha: fechaEntrega,
+        },
+        listaEstudiantes,
+      );
+
+      // TODO: guardar Tarea + DetalleTarea en la BD con estado "generada"
+      console.log(resultado);
+    } catch {
+      alert("No se pudo generar la tarea. Intenta de nuevo.");
+    } finally {
+      setCargando(false);
+    }
   };
 
   return (
@@ -146,10 +177,10 @@ function AsignarTarea() {
 
         <button
           onClick={handleAsignar}
-          disabled={!puedeAsignar}
+          disabled={!puedeAsignar || cargando}
           className="h-11 cursor-pointer rounded-lg bg-blue-600 px-6 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
         >
-          Asignar tarea
+          {cargando ? "Generando..." : "Asignar tarea"}
         </button>
       </div>
 
@@ -159,18 +190,17 @@ function AsignarTarea() {
           <thead className="bg-slate-100 text-slate-600">
             <tr>
               <th className="px-4 py-3 font-medium">#</th>
-              <th className="px-4 py-3 font-medium">Matricúla</th>
+              <th className="px-4 py-3 font-medium">Matrícula</th>
               <th className="px-4 py-3 font-medium">Estudiante</th>
               <th className="px-4 py-3 font-medium">Correo</th>
-              <th className="px-4 py-3 font-medium">Pasatiempo</th>
-              
+              <th className="px-4 py-3 font-medium">Perfil Estudiante</th>
             </tr>
           </thead>
           <tbody>
             {cursoId === "" ? (
               <tr>
                 <td
-                  colSpan={3}
+                  colSpan={5}
                   className="px-4 py-10 text-center text-slate-400"
                 >
                   Selecciona un curso para ver los estudiantes
@@ -179,7 +209,7 @@ function AsignarTarea() {
             ) : listaEstudiantes.length === 0 ? (
               <tr>
                 <td
-                  colSpan={3}
+                  colSpan={5}
                   className="px-4 py-10 text-center text-slate-400"
                 >
                   Este curso no tiene estudiantes
@@ -193,9 +223,11 @@ function AsignarTarea() {
                 >
                   <td className="px-4 py-3 text-slate-500">{i + 1}</td>
                   <td className="px-4 py-3 text-slate-800">{est.matricula}</td>
-                  <td className="px-4 py-3 text-slate-800">{est.nombres} {est.apellidos}</td>
-                  <td className="px-4 py-3 text-slate-800">{est.nombres}.{est.apellidos}@edusmart.edu.do</td>
-                  <td className="px-4 py-3 text-slate-800">leer, dormir y jugar</td>
+                  <td className="px-4 py-3 text-slate-800">
+                    {est.nombres} {est.apellidos}
+                  </td>
+                  <td className="px-4 py-3 text-slate-800">{est.correo}</td>
+                  <td className="px-4 py-3 text-slate-800">{est.perfil}</td>
                 </tr>
               ))
             )}

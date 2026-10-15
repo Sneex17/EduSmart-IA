@@ -1,10 +1,6 @@
 import supabase from '../services/supabase'
-
-//Carga de los cursos del docente
-export interface cursos {
-    id_curso: number
-    curso: string
-}
+import type estudiantes   from '../interfaces/estudiantes'
+import type cursos   from '../interfaces/curso'
 
 export async function ListaCursos(idDocente: number, idPeriodo: string): Promise<cursos[] | null> {
     const { data, error } = await supabase
@@ -22,11 +18,7 @@ export async function ListaCursos(idDocente: number, idPeriodo: string): Promise
 }
 
 //Lista de los estudiantes del curso
-export interface estudiantes {
-    matricula: string
-    nombres: string
-    apellidos: string
-}
+
 
 export async function ListaEstudiantesPorCurso(
     idCurso: number,
