@@ -1,14 +1,13 @@
 import { useMemo, useState, useEffect } from "react";
 import SelectField from "../components/SelectField";
 import DateField from "../components/DateField";
-
+import type estudiantes from "../interfaces/estudiantes";
+import type curso from "../interfaces/curso";
 import {
-  type cursos,
   ListaCursos,
   ListaMateriasPorCurso,
   type materias,
   ListaEstudiantesPorCurso,
-  type estudiantes,
 } from "../Controllers/CursoController";
 
 const ID_DOCENTE = 1;
@@ -194,7 +193,7 @@ const btnPrimario = `${btnBase} bg-blue-600 text-white hover:bg-blue-700`;
 const btnPeligro = `${btnBase} border border-red-300 text-red-600 hover:bg-red-50`;
 
 function EnviarTarea() {
-  const [listaCursos, setListaCursos] = useState<cursos[]>([]);
+  const [listaCursos, setListaCursos] = useState<curso[]>([]);
 
   useEffect(() => {
     ListaCursos(ID_DOCENTE, ID_PERIODO).then((data) =>

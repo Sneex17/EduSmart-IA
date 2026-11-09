@@ -10,6 +10,7 @@ import {
 import { GenerarTarea } from "../Controllers/GenerarTareaController"; // ajusta la ruta según dónde guardaste el servicio
 import type estudiantes from "../interfaces/estudiantes";
 import type curso from "../interfaces/curso";
+import { MensajeAvisos } from "../components/Alertas";
 
 // ---------- Datos de prueba (reemplazar por tus datos reales) ----------
 
@@ -118,7 +119,13 @@ function AsignarTarea() {
       // TODO: guardar Tarea + DetalleTarea en la BD con estado "generada"
       console.log(resultado);
     } catch {
-      alert("No se pudo generar la tarea. Intenta de nuevo.");
+      MensajeAvisos({
+        title: "Error al generar la tarea",
+        texto:
+          "No se pudo generar las tareas personalizadas. Intentar nuevamente",
+        icono: "error",
+        confirmacion: "Ok",
+      });
     } finally {
       setCargando(false);
     }
