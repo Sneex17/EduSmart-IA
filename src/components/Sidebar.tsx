@@ -8,18 +8,25 @@ import {
   Send,
   ListChecks,
   BarChart3,
+  LogOut,
 } from "lucide-react";
 import Logo from "../assets/EduSmartIA.svg";
+import { ROL } from "../context/auth";
+import { useAuth } from "../hooks/useAuth";
 
+const AMBOS: number[] = [ROL.DOCENTE, ROL.ESTUDIANTE];
 const links = [
-  { to: "/MenuPrincipal", label: "Home", icon: Home, end: true },
-  { to: "/MenuPrincipal/AsignarTarea", label: "Asignar tarea", icon: ClipboardPlus },
-  { to: "/MenuPrincipal/EnviarTarea", label: "Enviar tarea", icon: Send },
-  { to: "/MenuPrincipal/Tareas", label: "Tareas y actividades", icon: ListChecks },
-  { to: "/MenuPrincipal/Reportes", label: "Reportes", icon: BarChart3 },
+  { to: "/MenuPrincipal", label: "Home", icon: Home, end: true, roles: AMBOS },
+  { to: "/MenuPrincipal/AsignarTarea", label: "Asignar tarea", icon: ClipboardPlus, roles: [ROL.DOCENTE] },
+  { to: "/MenuPrincipal/EnviarTarea", label: "Enviar tarea", icon: Send, roles: [ROL.ESTUDIANTE] },
+  { to: "/MenuPrincipal/Tareas", label: "Tareas y actividades", icon: ListChecks, roles: AMBOS },
+  { to: "/MenuPrincipal/Reportes", label: "Reportes", icon: BarChart3, roles: [ROL.DOCENTE] },
 ];
 
+
 function Sidebar() {
+  const { perfil, logout } = useAuth();
+const visibles = links.filter((l) => perfil && l.roles.includes(perfil.id_rol));
   const [expanded, setExpanded] = useState(false);
 
   return (
@@ -46,10 +53,15 @@ function Sidebar() {
             {expanded ? <ChevronFirst size={18} /> : <ChevronLast size={18} />}
           </button>
         </div>
-
+        {/*Perfil */}
+        {expanded && (
+          <p className="mb-2 truncate px-3 text-xs text-blue-200">
+            {perfil?.nombres} {perfil?.apellidos}
+          </p>
+        )}
         {/* Links */}
         <ul className="flex-1 px-3 mt-4 space-y-1">
-          {links.map(({ to, label, icon: Icon, end }) => (
+          {visibles.map(({ to, label, icon: Icon, end }) => (
             <li key={to}>
               <NavLink
                 to={to}
@@ -62,7 +74,6 @@ function Sidebar() {
                       : "text-blue-200 hover:bg-blue-900 hover:text-white"
                   }`
                 }
-                
               >
                 <Icon size={20} className="shrink-0" />
                 <span
@@ -76,6 +87,18 @@ function Sidebar() {
             </li>
           ))}
         </ul>
+        <button
+          onClick={() => logout()}
+          title={!expanded ? "Cerrar sesión" : undefined}
+          className="flex w-full cursor-pointer items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-blue-200 transition-colors hover:bg-blue-900 hover:text-white"
+        >
+          <LogOut size={20} className="shrink-0" />
+          <span
+            className={`overflow-hidden whitespace-nowrap transition-all ${expanded ? "w-40" : "w-0"}`}
+          >
+            Cerrar sesión
+          </span>
+        </button>
       </nav>
     </aside>
   );

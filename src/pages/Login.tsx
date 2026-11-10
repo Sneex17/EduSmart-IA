@@ -1,5 +1,7 @@
+import { useState } from "react";
 import { useForm } from "react-hook-form";
-import { useNavigate } from "react-router-dom";
+import { Navigate, useNavigate } from "react-router-dom";
+import { useAuth } from "../hooks/useAuth";
 import LogoText from "../assets/EduSmartIA.svg";
 
 type LoginForm = {
@@ -9,6 +11,8 @@ type LoginForm = {
 
 function Login() {
   const navigate = useNavigate();
+  const { login, session, perfil, cerradaPorInactividad } = useAuth();
+  const [errorLogin, setErrorLogin] = useState("");
 
   const {
     register,
@@ -17,10 +21,19 @@ function Login() {
   } = useForm<LoginForm>();
 
   const onSubmit = async (data: LoginForm) => {
-    // TODO: reemplazar por la llamada real a tu API
-    console.log(data);
-    navigate("/MenuPrincipal");
+    setErrorLogin("");
+    try {
+      await login(data.correo.trim(), data.password);
+      navigate("/MenuPrincipal", { replace: true });
+    } catch (e) {
+      setErrorLogin(
+        e instanceof Error ? e.message : "No se pudo iniciar sesión",
+      );
+    }
   };
+
+  // Si ya hay sesión, no mostrar el login
+  if (session && perfil) return <Navigate to="/MenuPrincipal" replace />;
 
   return (
     <div className="flex min-h-screen justify-center items-center  bg-slate-50 px-4">
@@ -30,14 +43,28 @@ function Login() {
           <h1 className="text-lg font-semibold text-slate-800">
             Bienvenido de nuevo
           </h1>
-          <p className="text-sm text-slate-500">
-            Inicia sesión para continuar
-          </p>
+          <p className="text-sm text-slate-500">Inicia sesión para continuar</p>
         </div>
-
-        <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-5" noValidate>
+        {cerradaPorInactividad && !errorLogin && (
+          <p className="mb-4 rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-700">
+            Tu sesión se cerró por inactividad. Inicia sesión de nuevo.
+          </p>
+        )}
+        {errorLogin && (
+          <p className="mb-4 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">
+            {errorLogin}
+          </p>
+        )}
+        <form
+          onSubmit={handleSubmit(onSubmit)}
+          className="flex flex-col gap-5"
+          noValidate
+        >
           <div className="flex flex-col gap-1.5">
-            <label htmlFor="correo" className="text-sm font-medium text-slate-700">
+            <label
+              htmlFor="correo"
+              className="text-sm font-medium text-slate-700"
+            >
               Correo
             </label>
             <input
@@ -57,12 +84,17 @@ function Login() {
               })}
             />
             {errors.correo && (
-              <span className="text-xs text-red-500">{errors.correo.message}</span>
+              <span className="text-xs text-red-500">
+                {errors.correo.message}
+              </span>
             )}
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <label htmlFor="password" className="text-sm font-medium text-slate-700">
+            <label
+              htmlFor="password"
+              className="text-sm font-medium text-slate-700"
+            >
               Contraseña
             </label>
             <input
@@ -76,7 +108,9 @@ function Login() {
               {...register("password", { required: "Ingresa tu contraseña" })}
             />
             {errors.password && (
-              <span className="text-xs text-red-500">{errors.password.message}</span>
+              <span className="text-xs text-red-500">
+                {errors.password.message}
+              </span>
             )}
           </div>
 

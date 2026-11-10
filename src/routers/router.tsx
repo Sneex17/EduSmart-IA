@@ -5,20 +5,30 @@ import Home from "../pages/Home";
 import AsignarTarea from "../pages/AsignarTarea";
 import EnviarTarea from "../pages/EnviarTarea";
 import TareasActividades from "../pages/TareasActividades";
-
+import { ROL } from "../context/auth";
+import ProtectedRoute from "./ProtectedRoute";
 
 function MyRouter() {
   return (
     <Routes>
-      <Route path="/" element={<Login />} />
+  <Route path="/" element={<Login />} />
 
-      <Route path="/MenuPrincipal" element={<MenuPrincipal />}>
-        <Route index element={<Home />} />
+  <Route element={<ProtectedRoute />}>
+    <Route path="/MenuPrincipal" element={<MenuPrincipal />}>
+      <Route index element={<Home />} />
+
+      <Route element={<ProtectedRoute roles={[ROL.DOCENTE]} />}>
         <Route path="AsignarTarea" element={<AsignarTarea />} />
-        <Route path="EnviarTarea" element={<EnviarTarea />} />
-        <Route path="Tareas" element={<TareasActividades/>}/>
       </Route>
-    </Routes>
+
+      <Route element={<ProtectedRoute roles={[ROL.ESTUDIANTE]} />}>
+        <Route path="EnviarTarea" element={<EnviarTarea />} />
+      </Route>
+
+      <Route path="Tareas" element={<TareasActividades />} />
+    </Route>
+  </Route>
+</Routes>
   );
 }
 

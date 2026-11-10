@@ -11,10 +11,9 @@ import { GenerarTarea } from "../Controllers/GenerarTareaController"; // ajusta 
 import type estudiantes from "../interfaces/estudiantes";
 import type curso from "../interfaces/curso";
 import { MensajeAvisos } from "../components/Alertas";
-
+import { useAuth } from "../hooks/useAuth";
 // ---------- Datos de prueba (reemplazar por tus datos reales) ----------
 
-const ID_DOCENTE = 1;
 const ID_PERIODO = "26-27";
 
 // Fecha de hoy en formato YYYY-MM-DD usando la hora local
@@ -37,6 +36,7 @@ const armarCorreo = (e: { nombres: string; apellidos: string }) =>
 
 function AsignarTarea() {
   // ---------- Estados ----------
+  const { docente } = useAuth();
   const [listaCursos, setListaCursos] = useState<curso[]>([]);
   const [listaMaterias, setListaMaterias] = useState<materias[]>([]);
   const [listaEstudiantes, setListaEstudiantes] = useState<estudiantes[]>([]);
@@ -49,10 +49,14 @@ function AsignarTarea() {
 
   // ---------- Carga inicial de cursos ----------
   useEffect(() => {
-    ListaCursos(ID_DOCENTE, ID_PERIODO).then((data) =>
-      setListaCursos(data ?? []),
-    );
-  }, []);
+    if (!docente?.id_docente) return;
+
+    ListaCursos(docente.id_docente, ID_PERIODO)
+      .then((data) => setListaCursos(data ?? []))
+      .catch((error) => {
+        console.error("Error al cargar cursos:", error);
+      });
+  }, [docente?.id_docente]);
 
   // ---------- Opciones de los selects ----------
   const opcionesCursos = listaCursos.map((c) => ({
@@ -74,8 +78,11 @@ function AsignarTarea() {
 
     if (!value) return;
 
+    if (!docente?.id_docente || !value) return;
+
     const [materiasData, estudiantesData] = await Promise.all([
-      ListaMateriasPorCurso(ID_DOCENTE, Number(value), ID_PERIODO),
+      ListaMateriasPorCurso(docente.id_docente, Number(value), ID_PERIODO),
+
       ListaEstudiantesPorCurso(Number(value), ID_PERIODO),
     ]);
 
