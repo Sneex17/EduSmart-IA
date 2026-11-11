@@ -9,17 +9,27 @@ import {
   ListChecks,
   BarChart3,
   LogOut,
+  type LucideIcon,
 } from "lucide-react";
 import Logo from "../assets/EduSmartIA.svg";
 import { ROL } from "../context/auth";
 import { useAuth } from "../hooks/useAuth";
 
+interface LinkItem {
+  to: string;
+  label: string;
+  icon: LucideIcon;
+  end?: boolean;
+  roles: number[];
+}
+
 const AMBOS: number[] = [ROL.DOCENTE, ROL.ESTUDIANTE];
-const links = [
+
+const links: LinkItem[] = [
   { to: "/MenuPrincipal", label: "Home", icon: Home, end: true, roles: AMBOS },
   { to: "/MenuPrincipal/AsignarTarea", label: "Asignar tarea", icon: ClipboardPlus, roles: [ROL.DOCENTE] },
-  { to: "/MenuPrincipal/EnviarTarea", label: "Enviar tarea", icon: Send, roles: [ROL.ESTUDIANTE] },
-  { to: "/MenuPrincipal/Tareas", label: "Tareas y actividades", icon: ListChecks, roles: AMBOS },
+  { to: "/MenuPrincipal/EnviarTarea", label: "Enviar tarea", icon: Send, roles: [ROL.DOCENTE] },
+  { to: "/MenuPrincipal/Tareas", label: "Tareas y actividades", icon: ListChecks, roles: [ROL.ESTUDIANTE] },
   { to: "/MenuPrincipal/Reportes", label: "Reportes", icon: BarChart3, roles: [ROL.DOCENTE] },
 ];
 

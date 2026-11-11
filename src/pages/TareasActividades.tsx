@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import SelectField from "../components/SelectField";
-
+import { ListaMateriasEstudiante } from "../Controllers/EstudiantetTareaController";
+import { useAuth } from "../hooks/useAuth";
 // ---------- Tipos ----------
 
 interface MateriaEstudiante {
@@ -17,13 +18,8 @@ interface TareaEstudiante {
   nota: number | null;
 }
 
-// ---------- Datos de prueba (reemplazar por la función que trae los datos reales) ----------
 
-const MATERIAS_PRUEBA: MateriaEstudiante[] = [
-  { id: 1, nombre: "Matemática" },
-  { id: 2, nombre: "Lengua Española" },
-  { id: 3, nombre: "Ciencias de la Naturaleza" },
-];
+const PERIODO_ACTUAL = "26-27";
 
 const TAREAS_PRUEBA: Record<number, TareaEstudiante[]> = {
   1: [
@@ -69,6 +65,8 @@ const formatearFecha = (fecha: string) => {
 
 function TareasActividades() {
   // ---------- Estados ----------
+  const { estudiante } = useAuth();
+const matricula = estudiante?.matricula;
   const [listaMaterias, setListaMaterias] = useState<MateriaEstudiante[]>([]);
   const [listaTareas, setListaTareas] = useState<TareaEstudiante[]>([]);
   const [materiaId, setMateriaId] = useState("");
@@ -78,9 +76,17 @@ function TareasActividades() {
 
   // ---------- Carga inicial de materias ----------
   useEffect(() => {
-    // TODO: reemplazar por la función que trae las materias del estudiante
-    setListaMaterias(MATERIAS_PRUEBA);
-  }, []);
+    if (!matricula) return;
+    let cancelado = false;
+
+    ListaMateriasEstudiante(matricula, PERIODO_ACTUAL).then((materias) => {
+      if (!cancelado) setListaMaterias(materias ?? []);
+    });
+
+    return () => {
+      cancelado = true;
+    };
+  }, [matricula]);
 
   // ---------- Cerrar el detalle con Escape ----------
   useEffect(() => {
@@ -120,7 +126,7 @@ function TareasActividades() {
         <SelectField
           id="materia"
           label="Materia"
-          opciones={opcionesMaterias}
+          opciones={listaMaterias}
           value={materiaId}
           onChange={handleMateriaChange}
           placeholder="Selecciona una materia"

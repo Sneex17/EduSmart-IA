@@ -14,20 +14,19 @@ function MyRouter() {
   <Route path="/" element={<Login />} />
 
   <Route element={<ProtectedRoute />}>
-    <Route path="/MenuPrincipal" element={<MenuPrincipal />}>
-      <Route index element={<Home />} />
+  <Route path="/MenuPrincipal" element={<MenuPrincipal />}>
+    <Route index element={<Home />} />
 
-      <Route element={<ProtectedRoute roles={[ROL.DOCENTE]} />}>
-        <Route path="AsignarTarea" element={<AsignarTarea />} />
-      </Route>
+    <Route element={<ProtectedRoute roles={[ROL.DOCENTE]} />}>
+      <Route path="AsignarTarea" element={<AsignarTarea />} />
+      <Route path="EnviarTarea" element={<EnviarTarea />} />
+    </Route>
 
-      <Route element={<ProtectedRoute roles={[ROL.ESTUDIANTE]} />}>
-        <Route path="EnviarTarea" element={<EnviarTarea />} />
-      </Route>
-
+    <Route element={<ProtectedRoute roles={[ROL.ESTUDIANTE]} />}>
       <Route path="Tareas" element={<TareasActividades />} />
     </Route>
   </Route>
+</Route>
 </Routes>
   );
 }
